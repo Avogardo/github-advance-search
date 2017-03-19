@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { Debounce } from 'react-throttle';
 
 class Requests extends Component {
 
@@ -6,7 +7,7 @@ class Requests extends Component {
     super(props);
     this.onSubmit = this.onSubmit.bind(this);
     this.state = {
-      query: '',
+      results2: [],
       results: []
     };
   }
@@ -14,18 +15,38 @@ class Requests extends Component {
   onSubmit (e) {
     e.preventDefault();
     const issue = e.target.value;
-    const realIssue = 'dupa label:bug || label:issue dupsko';
+    //const realIssue = 'bug label:bug || label:issue dupsko';
 
-    const labels = this.findLabels(realIssue);
-    console.log(labels);
-/*
-    fetch("https://api.github.com/search/issues?q="+issue).then(function(response) {
+    if(issue === "") {
+      console.log("nic tu nie ma");
+    } else {
+        const lowtext = issue.toLowerCase();
+
+        const arrtext = lowtext.split(' ');
+        const indexOR = this.findLabels(arrtext);
+
+        if(Number.isInteger(indexOR)) {
+          this.twoLabels(issue, indexOR);
+        } else {
+          this.oneLabel(issue);
+        }
+      }
+  }
+
+  twoLabels(issue, indexOR) {
+
+	let issue1 = issue.split(" ");
+  let issue2 = issue.split(" ");
+
+  issue1.splice(indexOR, 2);
+
+        fetch("https://api.github.com/search/issues?q="+issue1.join("+")).then(function(response) {
         return response.json();
     }).then((data) => {
 
-        let result = "";
+        let result = [];
         for(let i = 0; i < 30; i++) {
-            result += data.items[i].html_url + "  ";
+            result[i] = data.items[i].html_url;
         }
 
         this.setState({
@@ -35,44 +56,93 @@ class Requests extends Component {
     }).catch(function() {
       console.log("error");
     });
-    */
+
+
+    issue2.splice(indexOR-1, 2);
+
+        fetch("https://api.github.com/search/issues?q="+issue2.join("+")).then(function(response) {
+        return response.json();
+    }).then((data) => {
+
+        let result = [];
+        for(let i = 0; i < 30; i++) {
+            result[i] = data.items[i].html_url;
+        }
+
+        this.setState({
+          results2: result
+        });
+
+    }).catch(function() {
+      console.log("error");
+    });
   }
 
-  findLabels(text) {
-    const lowtext = text.toLowerCase();
+  oneLabel(issue) {
+        fetch("https://api.github.com/search/issues?q="+issue).then(function(response) {
+        return response.json();
+    }).then((data) => {
 
-    if(lowtext.includes(' || label:')) {
-      const arrtext = lowtext.split(' ');
-      const x = arrtext.map((z) => {
-        if(z.includes('label:')) {
-          const u = z.split(':');
-          return u[1]
-        } else {
-          return null;
+
+        let result = [];
+        for(let i = 0; i < 30; i++) {
+            result[i] = data.items[i].html_url;
         }
-      });
 
-      return this.filterNaN(x);
+        this.setState({
+          results: result
+        });
+
+    }).catch(function() {
+      console.log("error");
+    });
+  }
+
+//Sprawdza, czy wystepuje or i zwraca jego pozycje
+  findLabels(arr) {
+    if(arr.some((x) => x === '||')) {
+      return arr.indexOf("||");
+    } else {
+      return arr
     }
   }
 
-  filterNaN(arr) {
-    const filteredArr = arr.filter(Boolean);
-    return filteredArr;
+//Drukuje wyniki
+  print() {
+    if(this.state.results2.length === 1) {
+      return this.state.results.map(function(z, i) {
+        return <div key={i}>
+            <a href={z}>{z}</a>
+          </div>
+      });
+    } else {
+      const uniq = this.uniq(this.state.results.concat(this.state.results2));
+
+      return uniq.map(function(z, i) {
+        return <div key={i}>
+            <a href={z}>{z}</a>
+          </div>
+      });
+    }
+  }
+
+//Usuwa te same wyniki
+  uniq(a) {
+     return Array.from(new Set(a));
   }
 
   render() {
-
     return (
             <div>
                 <h2>Szukaj</h2>
-                  <input type="text" onChange={this.onSubmit}/>
+                <Debounce time="1000" handler="onChange">
+                    <input type="text" onChange={this.onSubmit}/>
+                </Debounce>
                 <h2>Wyniki:</h2>
-                <p>{this.state.results}</p>
+                <div>{this.print()}</div>
             </div>
     )
   }
 }
-//{this.state.results.map((item, i) => <Issue key={i} item={item} />)}
 
 export default Requests;
