@@ -6,8 +6,9 @@ import Requests from './Requests.js';
 class App extends Component {
   render() {
     return(
-
-        <Requests />
+    	<div className="container">
+    		<Requests />
+    	</div>
     )
   }
 }
