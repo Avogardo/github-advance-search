@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { Debounce } from 'react-throttle';
 import './Requests.css';
+import { Button } from 'semantic-ui-react'
 
 class Requests extends Component {
 
@@ -10,7 +11,7 @@ class Requests extends Component {
     this.state = {
       results2: [],
       results: [],
-      page: [0, 15],
+      page: 0,
       issueState: '',
       indexORState: 0,
     };
@@ -55,12 +56,12 @@ class Requests extends Component {
 
 
 
-        fetch("https://api.github.com/search/issues?q="+issue1.join("+")).then(function(response) {
+        fetch("https://api.github.com/search/issues?q="+issue1.join("+")+"?page="+currentPage).then(function(response) {
         return response.json();
     }).then((data) => {
 
         let result = [];
-        for(let i = currentPage[0]; i < currentPage[1]; i++) {
+        for(let i = 0; i < 30; i++) {
             result[i] = data.items[i].html_url;
         }
 
@@ -75,12 +76,12 @@ class Requests extends Component {
 
     issue2.splice(indexOR-1, 2);
 
-        fetch("https://api.github.com/search/issues?q="+issue2.join("+")).then(function(response) {
+        fetch("https://api.github.com/search/issues?q="+issue2.join("+")+"?page="+currentPage).then(function(response) {
         return response.json();
     }).then((data) => {
 
         let result = [];
-        for(let i = currentPage[0]; i < currentPage[1]; i++) {
+        for(let i = 0; i < 30; i++) {
             result[i] = data.items[i].html_url;
         }
 
@@ -94,10 +95,14 @@ class Requests extends Component {
   }
 
   oneLabel(issue) {
-        fetch("https://api.github.com/search/issues?q="+issue).then(function(response) {
+  console.log(issue);
+
+  let currentPage = this.state.page;
+
+
+    fetch("https://api.github.com/search/issues?q="+issue+"?page="+currentPage).then(function(response) {
         return response.json();
     }).then((data) => {
-
 
         let result = [];
         for(let i = 0; i < 30; i++) {
@@ -148,17 +153,19 @@ class Requests extends Component {
     const issue = this.state.issueState;
     const index = this.state.indexORState;
 
-console.log(issue);
-
     let currentPage = this.state.page;
-    currentPage[0] = currentPage[0] + 15;
-    currentPage[1] = currentPage[1] + 15;
+    currentPage++;
 
     this.setState({
       page: currentPage
     });
 
-    this.twoLabels(issue, index);
+    if(index) {
+      this.twoLabels(issue, index);
+    } else {
+      this.oneLabel(issue);
+    }
+
   }
 
   render() {
@@ -170,9 +177,9 @@ console.log(issue);
                 </Debounce>
                 <h3>Wyniki:</h3>
                 <div>{this.print()}</div>
-                {this.state.issueState? <button onClick={(e) => this.nextPage(e)}>
+                {this.state.issueState? <Button primary onClick={(e) => this.nextPage(e)}>
                   Next
-                </button> : '' }
+                </Button> : '' }
             </div>
     )
   }
